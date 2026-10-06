@@ -1,0 +1,9 @@
+__pycache__
+.DS_Store
+.vscode
+work_dir
+evaluation
+ctcdecode
+checkpoints
+ckpt
+best_checkpoints

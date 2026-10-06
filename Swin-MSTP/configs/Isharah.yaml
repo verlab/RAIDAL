@@ -1,0 +1,4 @@
+dataset_root: ./dataset/Isharah
+dict_path: ./preprocess/Isharah/gloss_dict.npy
+evaluation_dir: ./evaluation/slr_eval
+evaluation_prefix: Isharah-groundtruth

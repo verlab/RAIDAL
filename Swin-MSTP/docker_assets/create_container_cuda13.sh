@@ -1,6 +1,7 @@
-# To create the docker container, run:
+#!/bin/bash
 
-MODEL_ROOTDIR="$(cd .. && pwd)" # The model is located in the parent folder of 'docker assets/'
+# To create the docker container, run:
+MODEL_ROOTDIR="$(cd .. && pwd)" # The model is located in the parent folder of 'docker_assets/'
 
 docker build -t ubuntu2004-custom:latest .
 

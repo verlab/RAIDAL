@@ -1,6 +1,6 @@
-For CUDA==13.0, run `./create_container_cuda13.sh`
+For CUDA==13.X, run `./create_container_cuda13.sh`
 
-For CUDA==12.0, run `./create_container_cuda12.sh`
+For CUDA==12.X, run `./create_container_cuda12.sh`
 
 You can check your CUDA version with
 

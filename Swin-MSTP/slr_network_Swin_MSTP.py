@@ -149,14 +149,14 @@ class SLRModel(nn.Module):
             conv_pred, _, _, _                         = self.decoder.decode(conv1d_outputs['conv_logits'], lgt, batch_first=False, probs=False)
 
 
-        # --- Feature Generation ---
-        # BiLSTM
-        # tm_outputs['predictions'] is (T, B, C), which we convert to (T,C)
-        bilstm_features = tm_outputs['predictions'].squeeze(1).cpu().detach().numpy()
+            # --- Feature Generation ---
+            # BiLSTM
+            # tm_outputs['predictions'] is (T, B, C), which we convert to (T,C)
+            bilstm_features = tm_outputs['predictions'].squeeze(1).cpu().detach().numpy()
 
-        # Classifier
-        # outputs is (T, B, C), which we convert to (T,C)
-        classifier_features = outputs.squeeze(1).cpu().detach().numpy()
+            # Classifier
+            # outputs is (T, B, C), which we convert to (T,C)
+            classifier_features = outputs.squeeze(1).cpu().detach().numpy()
 
         return {
             "bilstm_features":     bilstm_features,

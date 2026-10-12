@@ -1,17 +1,3 @@
-# Separar os dados de treino em 2 subconjuntos: treino unlabeled e treino labeled
-
-# Passo 1:
-    # Treinar o main.py com o conjunto de treino labeled
-
-# Passo 2:
-    # Salvar o melhor modelo
-
-# Passo 3:
-    # Rodar inferência do modelo no conjunto de treino unlabeled e add as 10% mais incertas ao conjunto de treino labeled
-
-# Passo 4:
-    # Voltar ao passo 1 e repetir até acabar as amostras
-
 import numpy as np
 import subprocess
 import shutil
@@ -23,7 +9,7 @@ import re
 
 from active_learning_modules.dataset_utils import splitDataset, copyDataset, labelDataPoints, preprocessRoutineWrapper, getNumFramesInLabeledSet, randomlySelectVideos, getNumFramesInVideo, copySetsFromCheckpoint, copySetsToWorkDir, createConfigFiles
 from active_learning_modules.parser import makeParser, validateParams, saveALParams
-from active_learning_modules.rank_by_feature import rankSimiliratyByFeatures
+from active_learning_modules.rank_by_feature import rankSimilarityByFeatures
 
 
 if __name__ == '__main__':
@@ -94,14 +80,6 @@ if __name__ == '__main__':
 
         # Copy the labeled and unlabeled pools from the checkpoint to the labeled and unlabeled subsets
         copySetsFromCheckpoint(args.checkpoint, labeledSubsetPath, unlabeledSubsetPath, datasetBase, args.config)
-
-        shutil.copy(os.path.join(args.checkpoint, "labeled.corpus.csv"),
-                    os.path.join(os.path.join(args.work_dir, labeledSubsetName), "labeled.corpus.csv")
-                    )
-
-        shutil.copy(os.path.join(args.checkpoint, "unlabeled.corpus.csv"),
-            os.path.join(os.path.join(args.work_dir, labeledSubsetName), "labeled.corpus.csv")
-            )
 
         # If true, uses the pretrained model found in the checkpoint to generate the features.
         # Setting 'modelNeedsTraining' avoids retraining from scratch and makes comparisons more fair.
@@ -186,8 +164,8 @@ if __name__ == '__main__':
         # If the selection strategy is randomly sampling videos, we randomly select a couple of videos for the labeled pool and that's it!
         if args.strategy == "random":
             if iterationId == 1:
-                subprocess.run(f"python main.py --config {args.config} --device {args.device} --dataset {labeledSubsetName}   --phase features --load-weights {args.work_dir}/{labeledSubsetName}/_best_model.pt --work-dir {args.work_dir}/{labeledSubsetName}-features   --feature-folders train --batch-size 1 --test-batch-size 1 -b {args.bald_iterations}", shell=True, check=True)
-                subprocess.run(f"python main.py --config {args.config} --device {args.device} --dataset {unlabeledSubsetName} --phase features --load-weights {args.work_dir}/{labeledSubsetName}/_best_model.pt --work-dir {args.work_dir}/{unlabeledSubsetName}-features --feature-folders test  --batch-size 1 --test-batch-size 1 --test-inference -b {args.bald_iterations}", shell=True, check=True)
+                subprocess.run(f"python main.py --config {args.config} --device {args.device} --dataset {labeledSubsetName}   --phase features --load-weights {args.work_dir}/{labeledSubsetName}/_best_model.pt --work-dir {args.work_dir}/{labeledSubsetName}-features   --feature-folders train --batch-size 1 --test-batch-size 1 -b {args.mc_dropout_iterations}", shell=True, check=True)
+                subprocess.run(f"python main.py --config {args.config} --device {args.device} --dataset {unlabeledSubsetName} --phase features --load-weights {args.work_dir}/{labeledSubsetName}/_best_model.pt --work-dir {args.work_dir}/{unlabeledSubsetName}-features --feature-folders test  --batch-size 1 --test-batch-size 1 --test-inference -b {args.mc_dropout_iterations}", shell=True, check=True)
             
             videoRank = randomlySelectVideos(unlabeledSubsetPath,
                                                   datasetBase, 
@@ -199,19 +177,19 @@ if __name__ == '__main__':
             # Save the AL parameters in the work_dir
             saveALParams(args, os.path.join(args.work_dir, labeledSubsetName))
 
-            # Now we use our SlowFastModel that was trained on the labeledSubset to extract features from all the data in the 
+            # Use the model that was trained on the labeledSubset to extract features from all the data in the 
             # labeled and unlabeled subsets.
 
             if needsFeatureGeneration:
-                subprocess.run(f"python main.py --config {args.config} --device {args.device} --dataset {labeledSubsetName}   --phase features --load-weights {args.work_dir}/{labeledSubsetName}/_best_model.pt --work-dir {args.work_dir}/{labeledSubsetName}-features   --feature-folders train --batch-size 1 --test-batch-size 1 -b {args.bald_iterations}", shell=True, check=True)
-                subprocess.run(f"python main.py --config {args.config} --device {args.device} --dataset {unlabeledSubsetName} --phase features --load-weights {args.work_dir}/{labeledSubsetName}/_best_model.pt --work-dir {args.work_dir}/{unlabeledSubsetName}-features --feature-folders test  --batch-size 1 --test-batch-size 1 --test-inference -b {args.bald_iterations}", shell=True, check=True)
+                subprocess.run(f"python main.py --config {args.config} --device {args.device} --dataset {labeledSubsetName}   --phase features --load-weights {args.work_dir}/{labeledSubsetName}/_best_model.pt --work-dir {args.work_dir}/{labeledSubsetName}-features   --feature-folders train --batch-size 1 --test-batch-size 1 -b {args.mc_dropout_iterations}", shell=True, check=True)
+                subprocess.run(f"python main.py --config {args.config} --device {args.device} --dataset {unlabeledSubsetName} --phase features --load-weights {args.work_dir}/{labeledSubsetName}/_best_model.pt --work-dir {args.work_dir}/{unlabeledSubsetName}-features --feature-folders test  --batch-size 1 --test-batch-size 1 --test-inference -b {args.mc_dropout_iterations}", shell=True, check=True)
                 
                 # These point to the folder containing the extracted features for each video
                 labeledFeaturesPath   = os.path.join(f"{args.work_dir}/{labeledSubsetName}-features",   "train")
                 unlabeledFeaturesPath = os.path.join(f"{args.work_dir}/{unlabeledSubsetName}-features", "test")
 
             # Use the features to find the data points in the unlabeled set that are the most dissimilar to the ones in the labeled set.
-            videoRank = rankSimiliratyByFeatures(  labeledFeaturesPath, 
+            videoRank = rankSimilarityByFeatures(  labeledFeaturesPath, 
                                                         unlabeledFeaturesPath,
                                                         args.strategy,
                                                         f"{args.work_dir}/{labeledSubsetName}/",

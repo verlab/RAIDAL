@@ -11,7 +11,7 @@ def softAttentionCoreset(unlabeledSet: dict, labeledSet: dict, device: str, fram
 
     This is the "Soft-Attention Core-set" baseline from Sec. 4.2.1: RAIDAL's
     closest point of comparison. Instead of using the CTC decoder as a hard filter
-    (RAIDAL's T ROI), every frame of every video is kept, and each frame's
+    (RAIDAL's TROI), every frame of every video is kept, and each frame's
     distance contribution is softly weighted by its non-blank probability (one
     minus the CTC blank probability) rather than being included or excluded
     outright.
@@ -65,7 +65,7 @@ def coreset(unlabeledEmbeddingsBiLSTM: dict, labeledEmbeddingsBiLSTM: dict, sign
     """Greedily ranks unlabeled videos by soft-weighted Information Density.
 
     Same greedy farthest-point procedure as `raidal.coreset` (Sec. 3.2.2, Eq. 4),
-    but with no T ROI filtering: every frame contributes to a video's score,
+    but with no TROI filtering: every frame contributes to a video's score,
     weighted by `signProbabilities` instead of being kept or dropped outright.
 
     Args:
@@ -132,14 +132,14 @@ def coreset(unlabeledEmbeddingsBiLSTM: dict, labeledEmbeddingsBiLSTM: dict, sign
             dists          = minDistToLabeled[videoId]
             signProb       = signProbabilities[videoId]
             
-            # The soft counterpart to RAIDAL's hard T ROI filter: instead of
+            # The soft counterpart to RAIDAL's hard TROI filter: instead of
             # keeping only decoder-aligned frames, every frame's distance is
             # scaled by how "non-blank" the model thinks it is, so rest poses and
             # pauses still contribute to the score, just less than likely sign
             # frames do.
-            weighedDists = dists * signProb
+            weightedDists = dists * signProb
 
-            totalDiversity = torch.sum(weighedDists).item()
+            totalDiversity = torch.sum(weightedDists).item()
             numFrames      = framesInVideo[videoId]
 
             # For each video, sums its sign-probability-weighted per-frame

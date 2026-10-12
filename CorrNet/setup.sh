@@ -1,3 +1,4 @@
+#!/bin/bash
 source /miniconda/etc/profile.d/conda.sh && conda activate modelvenv && pip install -r requirements.txt
 
 # get the code and install

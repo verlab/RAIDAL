@@ -151,7 +151,7 @@ def get_parser():
 
     ## Active Learning Parameters
 
-    ## A hacky way to load only the data in the test split. This was inherited from the XClip version.
+    ## A hacky way to load only the data in the test split.
     # This exists because normally the code doesn't let me run inference only for the test split, so this hack IS NECESSARY
     # if you want to do that.
     parser.add_argument(
@@ -162,15 +162,15 @@ def get_parser():
     )
 
     # This flag exists here and in active_learning_modules/parser.py at the same time 
-    # because BALD is special in the sense that it is required to run during the model's 
-    # inference step. Because of that, I need to have it here as well - don't worry, all
+    # because MC Dropout runs during the model's inference step.
+    # Because of that, I need to have it here as well - don't worry, all
     # checks on its value are being sanitized by active_learning_modules/parser.py
     parser.add_argument('-b',
-                        '--bald-iterations', 
+                        '--mc-dropout-iterations', 
                         type=int,
                         required=False,
                         default=0,
-                        help="The number of BALD iterations to run during inference"
+                        help="The number of MC Dropout iterations to run during inference"
                         )
 
 

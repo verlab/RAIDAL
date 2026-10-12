@@ -167,7 +167,7 @@ def setMCDropout(model, enabled=True):
         model.eval()
 
 
-def seq_feature_generation(loader, model, device, mode, work_dir, recoder, baldIterations=0):
+def seq_feature_generation(loader, model, device, mode, work_dir, recoder, dropoutIterations=0):
     model.eval()
 
     src_path = os.path.abspath(f"{work_dir}{mode}")
@@ -197,7 +197,6 @@ def seq_feature_generation(loader, model, device, mode, work_dir, recoder, baldI
         with torch.no_grad():
             ret_dict = model(vid, vid_lgt.clone())
 
-            ctcDecodedSeqsWithDropout     = []
             classifierFeaturesWithDropout = []
 
             # bilstm_features are the embeddings that are output by the BiLSTM module
@@ -210,15 +209,14 @@ def seq_feature_generation(loader, model, device, mode, work_dir, recoder, baldI
             ctcTimestepsNoDropout    = ret_dict["ctcBeamTimesteps"]
             ctcDecodedSeqsNoDropout  = ret_dict["ctcDecodedSeqs"]
 
-            if baldIterations > 0:
+            if dropoutIterations > 0:
                 setMCDropout(model, enabled=True)
 
                 # Run N iterations with dropout enabled
-                for _ in range(baldIterations):
+                for _ in range(dropoutIterations):
                     modelOutput = model(vid, vid_lgt.clone())
 
                     classifierFeaturesWithDropout.append(modelOutput["classifier_features"])
-                    ctcDecodedSeqsWithDropout.append(modelOutput["ctcDecodedSeqs"])
 
                 # Disable dropout for next iteration
                 setMCDropout(model, enabled=False)
@@ -239,8 +237,7 @@ def seq_feature_generation(loader, model, device, mode, work_dir, recoder, baldI
 
                 "ctcTimestepsNoDropout": ctcTimestepsNoDropout,
 
-                "ctcDecodedSeqsNoDropout": ctcDecodedSeqsNoDropout,
-                "ctcDecodedSeqsWithDropout": ctcDecodedSeqsWithDropout
+                "ctcDecodedSeqsNoDropout": ctcDecodedSeqsNoDropout
             }
             np.save(filename, save_file)
             start = end

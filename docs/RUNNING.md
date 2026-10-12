@@ -1,8 +1,8 @@
-# Running the CorrNet experiments
+# Running the experiments
 
 Run these commands from `/model` inside the container after completing the environment and dataset setup. The container script mounts the `CorrNet/` folder itself at `/model`, so `activelearning.py` is already sitting there and you don't need to change directories.
 
-The examples in this documentation use CorrNet, but the exact same commands work for Swin-MSTP too! The Swin-MSTP container mounts `Swin-MSTP/` at its own `/model` in the same way, and runs under its own container name.
+The examples in this documentation use CorrNet, and the same commands work for Swin-MSTP with two differences. The ablation strategies (`unfiltered-raidal`, `raidal-E`, `raidal-K*`, `raidal-R*`) and CTC-BADGE (`ctc-badge`, `raidal-ctc-badge`) are only implemented in `CorrNet/`, and the Swin-MSTP PHOENIX experiments in the paper stop one acquisition earlier, at 160k frames on PHOENIX-2014 and 165k on PHOENIX-T, so drop the last value from each `-f` list in the examples below. The Swin-MSTP container mounts `Swin-MSTP/` at its own `/model` in the same way, and runs under its own container name, `swin_mstp`.
 
 ```bash
 python3 activelearning.py --help
@@ -64,7 +64,7 @@ There's no separate flag for the number of acquisition cycles, since the script 
 
 `--device` selects the GPU index.
 
-`--config` selects the CorrNet training configuration. Notice I included the training configurations used for my experiments in the `configs/` folder. `baseline-replicationX.yaml` should be used with PHOENIX-2014 and `baseline-replicationX-phoenix-T.yaml` should be used with PHOENIX-T. The `baseline-replicationX-Isharah.yaml` configs ship in `Swin-MSTP/configs/` instead, since Swin-MSTP is the backbone the paper uses for Isharah.
+`--config` selects the training configuration. Notice I included the configs that I used for my experiments in the `configs/` folder. `baseline-replicationX.yaml` should be used with PHOENIX-2014 and `baseline-replicationX-phoenix-T.yaml` should be used with PHOENIX-T. The `baseline-replicationX-Isharah.yaml` configs ship in `Swin-MSTP/configs/` instead, since Swin-MSTP is the backbone the paper uses for Isharah.
 
 `-b` controls how many Monte Carlo dropout inference passes are saved during feature extraction. With `-b 0` each video is passed through the model once, with dropout disabled. With `-b 5` the model additionally runs five stochastic passes with dropout enabled, and every one of those passes is saved alongside the clean one.
 
@@ -81,14 +81,6 @@ Lastly, when using `-b` above zero, the parser requires at least two passes, so 
 `--use-model` reuses the checkpoint's trained model but regenerates the features.
 
 `--use-features` reuses both the checkpoint's model and its pregenerated features. This is the flag that makes the shared-start workflow work.
-
-### How `-f` maps to reported budgets
-
-The number of loop iterations isn't quite the number of points you get in a results table, so it's worth spelling out.
-
-On a **fresh run**, the first value in `-f` builds the initial random pool and iteration 1 trains on it. Each later iteration trains on the pool after one more acquisition. So the 10-value PHOENIX-2014 schedule below gives you the initial 20k baseline plus the 9 reported budgets.
-
-On a **checkpoint run**, the first iteration doesn't train (it already has the checkpoint's model), it just performs the first acquisition. The script accounts for this by running one extra loop iteration internally, so the 9-value schedule still lands on the same 9 reported budgets. The leading initial-pool value is simply dropped, since that pool already exists.
 
 ## Strategy names
 
@@ -137,7 +129,7 @@ raidal-ctc-badge
 | `unfiltered-raidal` | Ablation (a): RAIDAL with decoder-based filtering removed. |
 | `raidal-E` | Ablation (b): RAIDAL's filter applied to Entropy. |
 | `raidal-K1`, `raidal-K2`, `raidal-K5` | Ablation (c): number of decoded hypotheses used to build the TROI. |
-| `raidal-R0` … `raidal-R4` | Ablation (d): Temporal Expansion Radius sensitivity. |
+| `raidal-R0`, `raidal-R2`, `raidal-R3`, `raidal-R4` | Ablation (d): Temporal Expansion Radius sensitivity. R = 1 is the default `raidal`, so there is no `raidal-R1` (see [RAIDAL settings](RUNNING.md#raidal-settings)). |
 
 # Hands-On Examples
 
@@ -150,7 +142,7 @@ The paper starts PHOENIX-2014 from 20k labeled frames and then evaluates 30k, 40
 Pass the initial budget followed by the acquisition increments.
 
 ```bash
-python activelearning.py \
+python3 activelearning.py \
   -d dataset/phoenix2014 \
   -f 20000 10000 10000 10000 10000 20000 20000 20000 40000 40000 \
   -w work_dir/Phoenix2014/Random/Rep1 \
@@ -178,7 +170,7 @@ If you have multiple GPUs available, you don't have to wait for the whole Random
 Notice that Random's checkpoint already contributes the initial 20k frames from Random's first acquisition cycle. Therefore `-f` should contain only the nine remaining acquisition budgets. This way RAIDAL's frame budgets line up to Random's 30k, 40k, 50k, etc.
 
 ```bash
-python activelearning.py \
+python3 activelearning.py \
   -d dataset/phoenix2014 \
   -f 10000 10000 10000 10000 20000 20000 20000 40000 40000 \
   -w work_dir/Phoenix2014/RAIDAL/Rep1 \
@@ -202,7 +194,7 @@ Note that this run uses `-b 0` even though Step 1 used `-b 5`. This is because R
 Every other strategy is the same command with a different `-s`, a different `-w`, and a different `-n`. Only those three change:
 
 ```bash
-python activelearning.py \
+python3 activelearning.py \
   -d dataset/phoenix2014 \
   -f 10000 10000 10000 10000 20000 20000 20000 40000 40000 \
   -w work_dir/Phoenix2014/Entropy/Rep1 \
@@ -228,7 +220,7 @@ Swap `-s entropy` / `-w .../Entropy/Rep1` / `-n EntropyRep1` for any of:
 -s raidal-R0                -w work_dir/Phoenix2014/RaidalR0/Rep1       -n RaidalR0Rep1
 ```
 
-The experiment name in `-n` has to differ from the one in the checkpoint path, and has to be unique across runs. The parser rejects repeats on purpose to prevent accidentaly overwriting files.
+The experiment name in `-n` has to differ from the one in the checkpoint path, and has to be unique across runs. The parser rejects repeats on purpose to prevent accidentally overwriting files.
 
 ### Replications
 
@@ -249,7 +241,7 @@ Notice that each dataset has a unique configuration file. `baseline-replicationX
 The PHOENIX-2014-T experiments start from 20,684 frames. The query sizes used to reach the later budgets are 10,342 for the first four acquisitions, 20,684 for the next three, and 41,367 for the last two.
 
 ```bash
-python activelearning.py \
+python3 activelearning.py \
   -d dataset/phoenix2014-T \
   -f 20684 10342 10342 10342 10342 20684 20684 20684 41367 41367 \
   -w work_dir/Phoenix2014T/Random/Rep1 \
@@ -263,7 +255,7 @@ python activelearning.py \
 Then branch the other methods off its first iteration exactly as in Step 2 above, dropping the leading `20684` from `-f`:
 
 ```bash
-python activelearning.py \
+python3 activelearning.py \
   -d dataset/phoenix2014-T \
   -f 10342 10342 10342 10342 20684 20684 20684 41367 41367 \
   -w work_dir/Phoenix2014T/RAIDAL/Rep1 \
@@ -280,12 +272,12 @@ python activelearning.py \
 
 ## Isharah
 
-> The paper runs Isharah on Swin-MSTP rather than CorrNet, following the Isharah authors' observation that CorrNet struggles in low-data regimes on this dataset. Accordingly, the Isharah configs ship in `Swin-MSTP/configs/`, and `CorrNet/configs/` carries the two PHOENIX ones only. Run these commands from the Swin-MSTP container, or write your own Isharah config with `dataset: Isharah` if you want to try it on CorrNet.
+> The paper runs Isharah on Swin-MSTP rather than CorrNet, following the Isharah authors' observation that CorrNet struggles in low-data regimes on this dataset. Accordingly, the Isharah configs ship in `Swin-MSTP/configs/`, and `CorrNet/configs/` carries only two PHOENIX configs. Run these commands from the Swin-MSTP container, or write your own Isharah config with `dataset: Isharah` if you want to try it on CorrNet.
 
-Isharah starts at 200,000 frames, and progresses in increments of 100,000 frames until the labeled pool reaches 700,000. Run the first Random sampling iteration on Isharah with:
+Isharah starts at 200,000 frames, and progresses in increments of 100,000 frames until the labeled pool reaches 700,000. Run the first Random Sampling iteration on Isharah with:
 
 ```bash
-python activelearning.py \
+python3 activelearning.py \
   -d dataset/Isharah \
   -f 200000 100000 100000 100000 100000 100000 \
   -w work_dir/Isharah/Random/Rep1 \
@@ -299,7 +291,7 @@ python activelearning.py \
 And the branched methods, dropping the leading `200000`:
 
 ```bash
-python activelearning.py \
+python3 activelearning.py \
   -d dataset/Isharah \
   -f 100000 100000 100000 100000 100000 \
   -w work_dir/Isharah/RAIDAL/Rep1 \
@@ -318,10 +310,10 @@ Apart from the config file, the commands are identical on either backbone.
 
 ## UNCAST
 
-UNCAST is the only strategy that reads the Monte Carlo dropout outputs, so it's the reason Step 1 is run with `-b 5`. When using UNCAST, `-b` should be set to a non-zero value.
+UNCAST is the only strategy that reads the Monte Carlo dropout outputs, so it's the reason Step 1 is run with `-b 5`. When using UNCAST, `-b` must be at least 2, and the parser rejects `-s uncast -b 0`.
 
 ```bash
-python activelearning.py \
+python3 activelearning.py \
   -d dataset/phoenix2014 \
   -f 10000 10000 10000 10000 20000 20000 20000 40000 40000 \
   -w work_dir/Phoenix2014/UNCAST/Rep1 \
@@ -343,7 +335,7 @@ A feature directory written with `-b 0` contains no dropout outputs, so passing 
 You don't have to rerun Random Sampling for that. Swap `--use-features` for `--use-model`, which reuses the checkpoint's trained model and regenerates the features from it, this time with dropout enabled:
 
 ```bash
-python activelearning.py \
+python3 activelearning.py \
   -d dataset/phoenix2014 \
   -f 10000 10000 10000 10000 20000 20000 20000 40000 40000 \
   -w work_dir/Phoenix2014/UNCAST/Rep1 \
@@ -360,7 +352,9 @@ The initial labeled pool and the model are still the shared ones, so UNCAST stil
 
 ## RAIDAL settings
 
-The CorrNet PHOENIX experiments use the top 10 decoded hypotheses and a Temporal Expansion Radius of 1 for the main RAIDAL configuration.
+The main RAIDAL configuration uses the top 10 decoded hypotheses and a Temporal Expansion Radius of R = 1 on every dataset and backbone in the paper.
+
+The paper defines R through Eq. 1, which depends on the frame rate the videos were recorded at. PHOENIX-2014 and PHOENIX-T are recorded at 25 FPS, which makes Eq. 1 evaluate to R = 1, and the paper uses R = 1 on Isharah as well. Therefore, the code always uses R = 1 instead of computing it every time. If you use RAIDAL on a dataset recorded at a different frame rate, compute R with Eq. 1 taking into account the frame rate and the model's temporal downsampling stride and change `temporalExpansionRadius` in `active_learning_modules/rank_by_feature.py`.
 
 `active_learning_modules/rank_by_feature.py` fixes those values when `raidal` is selected. The K and R strategy variants change one of them while keeping the rest of the acquisition procedure unchanged.
 
@@ -374,13 +368,13 @@ During selection, RAIDAL prints how much the TROI filter shrank the videos, whic
 Avg size after TROI filtering: 31.42% +- 8.71% of original video. Q15 = ...
 ```
 
-If that number is 100%, the filter isn't removing anything and the entire video is influencing selection, so always try to keep it lower. In my experiments, the standard RAIDAL configuration usually retained around 20%-40% of the videos.
+If that number is 100%, the filter isn't removing anything and the entire video is influencing selection, so always try to keep it lower. In my experiments, the standard RAIDAL configuration usually retained around 20%-40% of the timesteps in each video.
 
 ## Output
 
 Every labeled iteration gets a work directory. It contains the best model, the labeled and unlabeled annotation files used for checkpointing, evaluation outputs, the saved training configuration, and `ALParams.json` for active learning runs.
 
-Feature extraction creates a separate directory with one NumPy file per video. Every file holds the BiLSTM features, the classifier logits, the decoded CTC sequences and the alignment peak timesteps from a single clean forward pass. When `-b` is above zero, each file additionally holds `-b` extra copies of the classifier logits and `-b` extra copies of the decoded sequences, one of each per dropout pass. The BiLSTM features and the alignment peak timesteps are only ever saved once, from the clean pass, so raising `-b` never duplicates those two.
+Feature extraction creates a separate directory with one NumPy file per video. Every file holds the BiLSTM features, the classifier logits, the decoded CTC sequences and the alignment peak timesteps from a single clean forward pass. When `-b` is above zero, each file additionally holds `-b` extra copies of the classifier logits with dropout enabled. The BiLSTM features and the alignment peak timesteps are only extracted from the clean, no-dropout path, so raising `-b` never duplicates those.
 
 The acquisition ranking is written to `videoRank.json`. Each acquisition strategy will rank videos differently, so the values between two rankings generated by two different acquisition strategies are not comparable. What *is* comparable across strategies is the order, and which videos ended up in the labeled pool.
 
@@ -404,18 +398,18 @@ Most failures happen in the parser before anything expensive starts, and the mes
 
 **`All elements in num-frames-to-label list must be greater than 0!`**: every value in `-f` has to be positive, including the first one.
 
-**`... -labeled already exists!`** or **`... -unlabeled already exists!`**: a previous run left dataset copies next to your dataset folder. These are created by the program, so the safe fix is to delete the leftover `dataset/<name>-labeled-iterationN` and `-unlabeled-iterationN` folders from the interrupted run before starting again. Or just give your experiment a different name with `-n`.
-
-**`'features' folder already exists!`**: delete the stray `features` folder in the working directory. It confuses feature extraction if left behind. Or, again, just give your experiment a different name with `-n`.
+**`...-labeled-iterationN already exists!`** or **`...-unlabeled-iterationN already exists!`**: a previous run with the same `-n` left dataset copies next to your dataset folder. These are created by the program, so the safe fix is to delete the leftover `dataset/<dataset>-<name>-labeled-iterationN` and `-unlabeled-iterationN` folders before starting again, or give your experiment a different name with `-n`.
 
 **`Please use a custom name different from the one in the checkpoint`**: `-n` can't contain the same experiment name as the one in `--checkpoint`. Use a fresh name per method, e.g. `RaidalRep1` branching from a `RandomRep1` checkpoint.
 
 **`Can't use --use-features without enabling --checkpoint`**: both `--use-features` and `--use-model` only make sense when using a checkpoint, so pass `--checkpoint` too.
 
-**`When activated, BALD should run for at least 2 iterations`**: `-b` must be `0` or `>= 2`.
+**`When activated, MC Dropout should run for at least 2 iterations`**: `-b` must be `0` or `>= 2`.
 
 **A `KeyError` on a video ID during selection**: the frame-count file for your dataset is missing an entry. `frameCount/` ships `phoenix2014.json`, `phoenix2014-T.json` and `Isharah.json`, one per supported dataset. A custom dataset needs its own file there with the number of frames in every video.
 
+**`Uncast can't run with -b 0!`**: UNCAST needs the Monte Carlo dropout passes, so run it with `-b 5`.
+
 ## Cleanup
 
-I've included a cleanup script called `cleanup.sh` that automatically removes temporary files from the work directory. `activelearning.py` runs it automatically, so you don't need to worry about running it manually.
+I've included a cleanup script called `cleanup.sh` that automatically removes the copies of the source code that main.py saves into each work directory. `activelearning.py` runs it automatically, so you don't need to worry about running it manually.

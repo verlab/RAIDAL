@@ -73,6 +73,10 @@ def uncast(unlabeledSet: dict, gloss2IndexDict: dict, device: str) -> dict:
         # samples.
         dropoutLogitsSamples = unlabeledSet[videoId]["classifierFeaturesWithDropout"]
 
+        if len(dropoutLogitsSamples) == 0:
+            raise ValueError(f"No MC Dropout outputs found for {videoId}. These features were likely extracted with -b 0, "
+                             f"so UNCAST can't measure model uncertainty. Regenerate them with --use-model and -b 5.")
+
         dropoutScores = []
         for noisyLogits in dropoutLogitsSamples:
             score = calculateNormalizedNLL(noisyLogits, cleanGlossIndices, ctcLossFn, device)

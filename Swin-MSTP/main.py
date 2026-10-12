@@ -118,7 +118,7 @@ class Processor():
         elif self.arg.phase == "features":
             for mode in self.arg.feature_folders:
                 seq_feature_generation(
-                    self.data_loader[mode], self.model, self.device, mode, self.arg.work_dir, self.recoder, self.arg.bald_iterations
+                    self.data_loader[mode], self.model, self.device, mode, self.arg.work_dir, self.recoder, self.arg.mc_dropout_iterations
                 )
 
     def save_arg(self):
@@ -220,7 +220,7 @@ class Processor():
         
         if 'phoenix' in self.arg.dataset:
             dataset_list = zip(["train", "dev", "test"], [True, False, False])
-            # A hacky way to load only the data in the test split. This was inherited from the XClip version.
+            # A hacky way to load only the data in the test split.
             # This exists because normally the code doesn't let me run inference only for the test split, so this hack IS NECESSARY
             # if you want to do that.
             if self.arg.test_inference:
@@ -284,8 +284,8 @@ if __name__ == '__main__':
         args.dataset_info = yaml.load(f, Loader=yaml.FullLoader)
    
     
-    if not (args.bald_iterations == 0 or args.bald_iterations >= 2):
-        raise ValueError("When activated, BALD should run for at least 2 iterations.")
+    if not (args.mc_dropout_iterations == 0 or args.mc_dropout_iterations >= 2):
+        raise ValueError("When activated, MC Dropout should run for at least 2 iterations.")
 
     processor = Processor(args)
    

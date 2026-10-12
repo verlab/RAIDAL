@@ -126,7 +126,7 @@ def coreset(unlabeledFeatures: dict, labeledFeatures: dict, device: str, framesI
     unlabeledVideoFeatures = torch.as_tensor(np.array([videoFeature for videoFeature in unlabeledFeatures.values()])).float().to(device)
     labeledVideoFeatures   = torch.as_tensor(np.array([videoFeature for videoFeature in labeledFeatures.values()  ])).float().to(device)
     
-    # Calculates the eucledian distance between two N-dimensional vectors using torch.
+    # Calculates the Euclidean distance between two N-dimensional vectors using torch.
     # vec1[None] adds a batch dimension (cdist expects 2D inputs on both sides),
     # and the trailing [0] then drops that same dimension from the result, leaving
     # a plain 1D vector of distances from vec1 to every row of vec2.

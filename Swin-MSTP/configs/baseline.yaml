@@ -2,9 +2,9 @@ feeder: dataset.dataloader_video.BaseFeeder
 
 phase: train
 dataset: phoenix2014
-num_epoch: 11
+num_epoch: 61
 work_dir: ./work_dir/swin_mstp/ 
-batch_size: 1
+batch_size: 2
 random_seed: 0
 test_batch_size: 1
 num_worker: 3
@@ -22,7 +22,7 @@ loss_weights:
 optimizer_args:
   optimizer: Adam
   base_lr: 0.0001
-  step: [20,30]
+  step: [20,35]
   learning_ratio: 1
   weight_decay: 0.0001
   start_epoch: 0

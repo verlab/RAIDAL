@@ -73,7 +73,7 @@ def getNumFramesInLabeledSet(labeledSubsetPath: str, datasetBase: str, numFrames
         videoId   = line.split("|")[0]
         
         if videoId not in numFramesByVideo:
-            raise Exception(f"Video {videoId} not found json that counts number of frames per video!")
+            raise Exception(f"Video {videoId} not found in the json that counts the number of frames per video!")
 
         numFrames = numFramesByVideo[videoId]
         totalNumFrames += numFrames
@@ -83,14 +83,14 @@ def getNumFramesInLabeledSet(labeledSubsetPath: str, datasetBase: str, numFrames
 
 def preprocessRoutineWrapper(datasetPath: str, datasetName: str, datasetBase):
     """
-    Runs the preprocess script to generatee the .stm groundtruth files, the gloss_dict.npy file, the [train, test, dev]_info.npy... Pretty much everything that we need to work with.
+    Runs the preprocess script to generate the .stm groundtruth files, the gloss_dict.npy file, the [train, test, dev]_info.npy... Pretty much everything that we need to work with.
     
-    It's important to note that, while the preprocessing routine in CorrNet generates the groundtruth for the train, test and dev files,
+    It's important to note that, while the preprocessing routine generates the groundtruth for the train, test and dev files,
     they are not saved in the correct folder automatically. This makes it necessary to move the groundtruth files
     to their correct folder. This is what the second part of this function does
 
     Args:
-        datasetPath (srt): The folder containing your data. It's the one with the phoenix-2014-multisigner/ folder.
+        datasetPath (str): The folder containing your data. It's the one with the phoenix-2014-multisigner/ folder.
         datasetName (str): The name of the dataset. Could be anything theoretically, but needs to match the one in the .yaml config file for the rest of the program to work
     """
     if datasetBase == "phoenix2014":
@@ -257,14 +257,14 @@ def splitDataset(datasetPath: str, customName: str, iterationId: int, datasetBas
         fullFrameFolderCategories = ["fullFrame-256x256px"]
 
         featuresFolderSuffix  = "features"
-        header                = "id|gloss"
+        header                = "id|gloss|text"
     else:
         raise Exception(f"Dataset {datasetBase} in config file not recognized!")
 
     # The original train.corpus.csv annotation goes to the unlabeled subset as the test.corpus.csv file. It goes in as the test file because the test file is used for
     # running inference, and we want to run inference on the 'unlabeled' data points. Ideally it should be called something else because this gives the impression
     # that it is the original test annotation, and it might get confusing. Just keep in mind that this is our simulated unlabeled data pool, and it is only called 
-    # test.corpus.csv because I don't want to change the code of CorrNet too much.
+    # test.corpus.csv because I don't want to change the code too much.
 
     shutil.copy(trainAnnotationPath, os.path.join(unlabeledSubsetPath, testAnnotationSuffix))
     # Since we now have a train.corpus.csv file that was 'swapped' for the test.corpus.csv file inside the unlabeled folder, we now have to also swap the
@@ -286,7 +286,7 @@ def splitDataset(datasetPath: str, customName: str, iterationId: int, datasetBas
             shutil.move("./tmp", testFullFrameCategoryFolder)
 
         # Note: Isharah does not require this since all videos (regardless if they are train test or dev) are inside the same "features/fullFrame-256x256px" folder!
-        elif datasetBase in ["Isharah"]:
+        elif datasetBase == "Isharah":
             pass
             
         else:
@@ -318,7 +318,7 @@ def copyDataset(datasetPath, newDatasetPath, datasetBase, copyAnnotations=False)
     copying the images. 
     
     The main difference from just using cp -r is that cp -r would make a copy of everything, and this function smartly uses symlinks in larger folders
-    with images to avoid making unecessary copies.
+    with images to avoid making unnecessary copies.
 
     Args:
         datasetPath      (str): a path pointing to where the dataset is
@@ -400,7 +400,7 @@ def copyDataset(datasetPath, newDatasetPath, datasetBase, copyAnnotations=False)
 
                 os.symlink(originalSubsetPath, newSubsetPath)
 
-        elif datasetBase in ["Isharah"]:
+        elif datasetBase == "Isharah":
             os.symlink(originalFullFrameFolder, newFullFrameFolder)
         
         else:

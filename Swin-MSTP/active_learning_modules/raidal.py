@@ -47,7 +47,7 @@ def raidal(unlabeledSet: dict, labeledSet: dict, device: str, framesInVideo: dic
     unlabeledEmbeddingsBiLSTM = normalizeEmbeddings(unlabeledEmbeddingsBiLSTM, device)
 
     # Get only the timesteps from the top numHypothesesUsed beams (the decoded
-    # hypotheses H from Sec. 3.2.1). The 'num of Beams used' ablation changes 
+    # hypotheses H from Sec. 3.2.1). The 'num of Beams used' ablation from the paper changes this value.
     unlabeledTimesteps = {}
     for k, v in unlabeledSet.items():
         # v['ctcTimestepsNoDropout'] is a list of tensors (one per beam), each

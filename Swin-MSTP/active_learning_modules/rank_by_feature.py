@@ -21,7 +21,7 @@ def getGloss2IndexDict(datasetBase):
     return g2i
     
 
-def rankSimiliratyByFeatures(labeledFeaturesPath: str, unlabeledFeaturesPath: str, strategy: str, saveFolder: str, device: str, 
+def rankSimilarityByFeatures(labeledFeaturesPath: str, unlabeledFeaturesPath: str, strategy: str, saveFolder: str, device: str, 
                             framesInVideo: dict, datasetBase:str, frameBudget=None) -> dict:
     """
     Given a set of features for the labeled and unlabeled sets, this function ranks the videos and returns a videoRank
@@ -83,7 +83,7 @@ def rankSimiliratyByFeatures(labeledFeaturesPath: str, unlabeledFeaturesPath: st
         videoRank       = entropy(unlabeledSet)
 
     elif strategy == 'uncast':
-        unlabeledSet    = readFeaturesFromFile(unlabeledFeaturesPath, ["classifierFeaturesNoDropout", "ctcDecodedSeqsNoDropout", "classifierFeaturesWithDropout", "ctcDecodedSeqsWithDropout"])
+        unlabeledSet    = readFeaturesFromFile(unlabeledFeaturesPath, ["classifierFeaturesNoDropout", "ctcDecodedSeqsNoDropout", "classifierFeaturesWithDropout"])
         videoRank       = uncast(
                                     unlabeledSet,
                                     gloss2IndexDict,
